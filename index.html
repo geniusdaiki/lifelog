@@ -171,6 +171,23 @@ nav a.on{color:var(--acc);font-weight:700}
 @media (min-width:900px){.rec button{padding:10px 4px;font-size:11px}}
 .upd{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:10px 14px 10px 16px;font-size:13px;display:flex;gap:10px;align-items:center;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .upd button{font:inherit;font-weight:700;color:#FCD34D;background:transparent;border:0;cursor:pointer}
+.ibar{position:fixed;left:0;right:0;bottom:calc(72px + env(safe-area-inset-bottom));background:rgba(244,245,247,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:8px 12px 10px;display:none;flex-direction:column;gap:8px;z-index:6}
+.ibar.on{display:flex}
+.ibar form{display:flex;gap:8px;max-width:480px;margin:0 auto;width:100%}
+.ibar input{flex:1;border-radius:14px;padding:12px 14px;font-size:15px;border:1.5px solid var(--line);background:#fff}
+.ibar .btn{width:46px;padding:0;border-radius:14px;font-size:18px}
+.qchips{display:flex;gap:6px;overflow-x:auto;max-width:480px;margin:0 auto;width:100%;scrollbar-width:none}
+.qchips::-webkit-scrollbar{display:none}
+.qchips .chip{white-space:nowrap;flex:0 0 auto;background:#fff}
+.qchips .chip i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px;vertical-align:1px}
+body.home{padding-bottom:calc(84px + 96px + env(safe-area-inset-bottom))}
+.line{display:flex;flex-direction:column;gap:6px}
+.line .lt{font-size:15px;font-weight:600;line-height:1.5}
+.line .lt b{color:#FCD34D;font-weight:700}
+.pick{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:var(--soft)}
+.pick .chips .chip[data-g=sport]{border-color:var(--c-sport);color:var(--c-sport)}.pick .chips .chip[data-g=study]{border-color:var(--c-study);color:var(--c-study)}.pick .chips .chip[data-g=money]{border-color:var(--c-money);color:var(--c-money)}.pick .chips .chip[data-g=meal]{border-color:var(--c-meal);color:var(--c-meal)}.pick .chips .chip[data-g=life]{border-color:var(--c-life);color:var(--c-life)}
+.tl .it .bd .gtag{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:6px;vertical-align:1px;color:#fff}
+@media (min-width:900px){.ibar{left:220px;right:auto;width:560px;bottom:24px;border:1px solid var(--line);border-radius:18px}.ibar form,.qchips{max-width:none}}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
 @keyframes ringfill{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:var(--off)}}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
@@ -201,14 +218,15 @@ nav a.on{color:var(--acc);font-weight:700}
   <div id="v-money" class="view"></div>
   <div id="v-sport" class="view"></div>
   <div id="v-study" class="view"></div>
-  <div id="v-places" class="view"></div>
+  <div id="v-week" class="view"></div><div id="v-places" class="view" style="display:none"></div>
   <div id="v-challenge" class="view"></div>
 </div>
 <nav id="nav"></nav>
+<div id="bar" class="ibar"><div class="qchips" id="qchips"></div><form id="qform" autocomplete="off"><input type="text" id="q" placeholder="例：豊洲picklr 2h 激しめ／ローソン 450／英語30 シャドーイング／83.9／寝る" enterkeyhint="send"><button type="submit" class="btn" id="qsend" aria-label="記録">↑</button></form></div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const BUILD='20261120-1559';
+const BUILD='20261120-1710';
 // ---------- helpers ----------
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -296,6 +314,7 @@ const SPORT_ICON = {
 };
 const sportIcon = (k, col='var(--acc)') => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="${k}">${SPORT_ICON[k]||SPORT_ICON.other}</svg>`;
 const ICONS = {
+  week:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   home:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
   money:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/>',
   sport:'<path d="M6 5v14M18 5v14M6 12h12M3 8v8M21 8v8"/>',
@@ -303,7 +322,7 @@ const ICONS = {
   places:'<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   challenge:'<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/>'
 };
-const TABS = [['home','今日'],['money','お金'],['sport','運動'],['study','学習'],['places','場所'],['challenge','挑戦']];
+const TABS = [['home','今日'],['week','週'],['money','お金'],['sport','運動'],['study','学習'],['challenge','挑戦']];
 function renderNav(active){
   $('nav').innerHTML = TABS.map(([k,l])=>`<a href="#${k}" class="${k===active?'on':''}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>${l}</a>`).join('');
 }
@@ -316,7 +335,7 @@ function dateLabel(){ return `${today.getMonth()+1}月${today.getDate()}日（${
 function weekLabel(){ const a=parse(DAYS[0]), b=parse(DAYS[6]); return `${a.getMonth()+1}/${a.getDate()} 〜 ${b.getMonth()+1}/${b.getDate()}`; }
 function status(){ if(S.dbOk===false) return `<div class="card"><p class="ai">${esc(S.err||'データに接続できませんでした。電波のある場所で開き直してください。')}</p><button class="btn ghost sm" id="retry">再読み込み</button></div>`; if(!S.ready) return `<div class="card"><p class="mute">読み込み中…</p></div>`; return ''; }
 
-function render(k){ ({home:renderHome, money:renderMoney, sport:renderSport, study:renderStudy, places:renderPlaces, challenge:renderChallenge})[k](); }
+function render(k){ ({home:renderHome, week:renderWeek, money:renderMoney, sport:renderSport, study:renderStudy, challenge:renderChallenge})[k](); $('bar').classList.toggle('on', k==='home'); }
 
 // ===== ホーム v2：今週の残り → 記録 → 今日のタイムライン（自動＋漏れ） → 今日の点数と明日 =====
 const HOUR = today.getHours();
@@ -349,7 +368,7 @@ function habitRows(){
   // 食事
   const meals=S.entries[TODAY]?.meals||[]; const kcal=meals.reduce((a,m)=>a+(Number(m.kcal)||0),0); const kt=c.kcalTarget||2100; const pr=meals.reduce((a,m)=>a+(Number(m.p)||0),0);
   rows.push({k:'meal', g:'meal', name:'食事', ic:'<path d="M4 3v7a3 3 0 0 0 6 0V3M7 3v18M17 3c-2 0-3 3-3 6v3h3v9"/>', done: kcal>0 && kcal<=kt && HOUR>=20, warn: kcal>kt,
-    r:`${kcal}`, rs:`/ ${kt}kcal`, st: kcal>kt?`今日は<strong>${kcal-kt}kcal</strong>超え。夜は軽めに`:(kcal?`残り<strong>${kt-kcal}kcal</strong>${pr?`・タンパク質 ${pr}g / 160g`:''}`:`まだ記録なし。食べたら「食事」をタップ（写真の分は同期後に自動）`),
+    r:`${kcal}`, rs:`/ ${kt}kcal`, st: kcal>kt?`今日は<strong>${kcal-kt}kcal</strong>超え。夜は軽めに`:(kcal?`残り<strong>${kt-kcal}kcal</strong>${pr?`・タンパク質 ${pr}g / 160g`:''}`:`まだ記録なし。キム秘書に報告した分は22時に同期されます`),
     seg: DAYS.map(d=>{ const ms=(S.entries[d]?.meals||[]); const kc=ms.reduce((a,m)=>a+(Number(m.kcal)||0),0); if(d>TODAY) return ''; if(!kc) return d===TODAY?'today':''; return kc<=kt?'on':'over'; })});
   // 英語
   const tm=S.entries[TODAY]?.study_min||0; const weekGoal=c.englishMin*7; const left=Math.max(0, weekGoal-st.tot); const perDay=Math.ceil(left/daysLeft);
@@ -413,13 +432,13 @@ function timelineItems(){
   });
   (e.cash||[]).forEach(cs=>{ if(cs.t) items.push({t:cs.t, cls:'money', html:`<b>${Number(cs.a).toLocaleString()}円</b> ${esc(cs.note||'現金')}<span class="sub">${esc([cs.cat,cs.method||(cs.card?'カード速報':'現金')].filter(Boolean).join('・'))}</span>`}); });
   (e.meals||[]).forEach(m=>{ items.push({t:m.t||'--:--', cls:'meal', html:`<b>${esc(m.slot||'')} ${esc(m.name||'')}</b><span class="sub">${m.kcal?`${m.kcal}kcal`:''}${m.p?`・タンパク質 ${m.p}g`:''}</span>`}); });
-  (e.actions||[]).forEach(a=>{ const meta=[a.place, a.dur?`${a.dur}分`:'', a.level, a.what, a.ai_pts!=null?`AI判定 ${a.ai_pts}/10`:(a.pts?`仮 ${a.pts}pt`:'')].filter(Boolean).join('・'); items.push({t:a.t, cls:a.sport?'sport':(a.k==='study'?'study':'habit'), html:`<b>${esc(a.label)}</b>${meta?`<span class="sub">${esc(meta)}</span>`:''}${a.note?`<span class="sub">${esc(a.note)}</span>`:''}${a.ai_note?`<span class="sub" style="color:var(--acc)">${esc(a.ai_note)}</span>`:''}`}); });
+  (e.actions||[]).forEach(a=>{ if(a.k==='note'){ items.push({t:a.t, cls:'', html:`${esc(a.label)}`}); return; } const meta=[a.place, a.dur?`${a.dur}分`:'', a.level, a.what, a.ai_pts!=null?`AI判定 ${a.ai_pts}/10`:(a.pts?`仮 ${a.pts}pt`:'')].filter(Boolean).join('・'); items.push({t:a.t, cls:a.sport?'sport':(a.k==='study'?'study':'habit'), html:`<b>${esc(a.label)}</b>${meta?`<span class="sub">${esc(meta)}</span>`:''}${a.note?`<span class="sub">${esc(a.note)}</span>`:''}${a.ai_note?`<span class="sub" style="color:var(--acc)">${esc(a.ai_note)}</span>`:''}`}); });
   items.push({t:NOW, cls:'now', now:true, html:`<span class="gap" style="color:var(--gray);font-size:12px">いま。${S.events?'記録したものが時系列で並びます':'イベント読み込み中…'}</span>`});
   items.sort((a,b)=>a.t<b.t?-1:(a.t>b.t?1:(a.now?1:-1)));
   return items;
 }
 
-function renderHome(){
+function buildSections(){
   const c=cfg(); const e=S.entries[TODAY]||{}; const rows=habitRows(); const ds=dayScoreOf(TODAY); const ms=misses(); const tl=timelineItems(); const ws=weekSpend();
   const greet = PHASE==='am'?'おはようございます':(PHASE==='day'?'こんにちは':'おつかれさまです');
   // ---- ヘッダー（時間帯で変わる）----
@@ -467,10 +486,11 @@ function renderHome(){
   SEC.week = card('今週の残り', rows.map(r=>`<div class="hab"><span class="ic ${r.done?'ok':(r.warn?'warn':'')}" data-g="${r.g||''}">${habIcon(r)}</span><b>${r.name}</b><span class="r">${r.r}<small>${r.rs}</small></span><span class="st ${r.warn?'warn':''}" style="grid-column:2 / -1">${r.st}</span><div class="seg">${r.seg.map(s=>`<i class="${s}" data-g="${r.g||''}"></i>`).join('')}</div></div>`).join('')+`<p class="mute" style="margin:0">${weekLabel()}・あと${daysLeft}日（今日を含む）。長期：完済 2027/3・TOEFL ${c.toeflTarget}（1月末）・${c.weightTarget}kg（12/31）</p>`, `${WD[today.getDay()]}曜`);
 
   // ---- 今日のタイムライン ----
-  const tlHtml = tl.length ? tl.map(it=>`<div class="it ${it.cls}"><span class="tm">${it.t}</span><span class="pt"><i></i></span><span class="bd">${it.html}</span></div>`).join('') : '';
+  const GT={sport:['運動','var(--c-sport)'],study:['学習','var(--c-study)'],money:['お金','var(--c-money)'],meal:['食事','var(--c-meal)'],habit:['生活','var(--c-life)'],place:['場所','var(--blue)']};
+  const tlHtml = tl.length ? tl.map(it=>`<div class="it ${it.cls}"><span class="tm">${it.t}</span><span class="pt"><i></i></span><span class="bd">${GT[it.cls]?`<span class="gtag" style="background:${GT[it.cls][1]}">${GT[it.cls][0]}</span>`:''}${it.html}</span></div>`).join('') : '';
   const _unused=`<div class="it now"><span class="tm">${NOW}</span><span class="pt"><i></i></span><span class="bd gap">いま。${S.events?'記録したものが時系列で並びます':'イベント読み込み中…'}</span></div>`;
   const noTime = monthTx().filter(t=>t.d===TODAY);
-  SEC.tl = card('今日のタイムライン', `<div class="tl">${tlHtml}</div>${noTime.length?`<p class="mute" style="margin:0">明細（時刻なし）：${noTime.map(t=>`${esc(t.m.slice(0,12))} ${t.a.toLocaleString()}円`).join('・')}</p>`:''}`, `${tl.length-1}件`);
+  SEC.tl = card('今日のタイムライン', `<div class="tl">${tlHtml}</div>${tl.length<=1?`<p class="mute" style="margin:0">下の入力欄に一行書くと、ここに並びます。例：「豊洲picklr 2h 激しめ」「ローソン 450」「英語30 シャドーイング」「83.9」「寝る」</p>`:''}${noTime.length?`<p class="mute" style="margin:0">明細（時刻なし）：${noTime.map(t=>`${esc(t.m.slice(0,12))} ${t.a.toLocaleString()}円`).join('・')}</p>`:''}`, `${tl.length-1}件`);
 
   // ---- 挑戦（朝は宣言、夜は振り返り）----
   SEC.ch = card('今日の挑戦', PHASE==='pm'
@@ -494,10 +514,34 @@ function renderHome(){
 
   // ---- AI ----
   const ins=S.insight; SEC.ai = card('AIからひとこと', `<p class="ai">${ins?esc(ins.text):autoInsight()}</p><div class="chips"><span class="tag">${ins?esc(ins.at||''):'アプリ内で自動生成'}</span><span class="tag">朝7時・夜22時に更新</span></div>`);
-  const ORDER = PHASE==='am' ? ['week','rec','miss','ch','tl','tmr','ai'] : (PHASE==='day' ? ['rec','miss','tl','week','ch','tmr','ai'] : ['tl','miss','ch','tmr','rec','week','ai']);
-  html += ORDER.map(k=>SEC[k]||'').join('') + status();
-  $('v-home').innerHTML = html;
+  SEC.head=html; SEC.rows=rows;
+  return SEC;
+}
+// 今日の一言（ホームの最上段）
+function todayLine(){
+  const c=cfg(); const e=S.entries[TODAY]||{}; const ws=weekSpend(); const sp=weekSport(); const st=e.study_min||0;
+  const remain=c.weeklyFrame-ws.total; const allow=Math.max(0,remain)/daysLeft; const left=allow-(ws.days[TODAY]||0);
+  const parts=[];
+  parts.push(left>=0?`今日あと <b>${fmtYen(left)}</b>`:`今日 <b>${fmtYen(-left)}</b> 超過`);
+  parts.push(st>=c.englishMin?`英語 <b>達成</b>`:`英語あと <b>${c.englishMin-st}分</b>`);
+  const behind=c.sports.filter(([k,,g])=>(sp.sp[k]||0)<g); const doneAll=c.sports.filter(([k,,g])=>(sp.sp[k]||0)>=g);
+  if(behind.length) parts.push(`${behind[0][1].replace('朝の','').replace('ピックルボール','ピックル')} <b>あと${behind[0][2]-(sp.sp[behind[0][0]]||0)}回</b>`); 
+  if(doneAll.length) parts.push(`${doneAll.map(x=>x[1].replace('朝の','').replace('ピックルボール','ピックル')).join('・')} 達成`);
+  const ds=dayScoreOf(TODAY);
+  return `<section class="dark" style="gap:8px"><div class="hd" style="align-items:baseline"><p class="mute" style="margin:0;font-size:12px">${dateLabel()}</p><span class="mute" style="font-size:11px">${PHASE==='pm'?`今日 ${ds.total}点`:''}</span></div><div class="line"><span class="lt">${parts.join('　')}</span><span class="mute" style="font-size:12px">週の残り枠 ${remain<0?'−':''}${man(Math.abs(remain))}万円・${weekLabel()}・詳しくは「週」へ</span></div></section>`;
+}
+function renderHome(){
+  const SEC=buildSections();
+  document.body.classList.add('home');
+  $('v-home').innerHTML = todayLine() + SEC.tl + SEC.miss + status();
+  bindHome(); renderChips();
+}
+function renderWeek(){
+  const SEC=buildSections();
+  document.body.classList.remove('home');
+  $('v-week').innerHTML = SEC.head + SEC.week + SEC.ch + SEC.tmr + SEC.ai + `<details class="card"><summary style="cursor:pointer;font-weight:700;font-size:15px">場所（出社時刻・よく行く町・旅行）</summary><div id="places-inner" style="display:flex;flex-direction:column;gap:14px;margin-top:12px"></div></details>` + status();
   bindHome();
+  renderPlaces(); const pv=$('v-places'); $('places-inner').innerHTML=pv.innerHTML; pv.innerHTML='';
 }
 
 // ---- 記録の保存と取り消し ----
@@ -579,6 +623,84 @@ function bindHome(){
   document.querySelector('[data-bedskip]')?.addEventListener('click', async()=>{ await saveEntry(TODAY,{bed_skip:true}); });
 }
 
+
+// ===== 一行入力の読み取り =====
+const QCHIPS=[['sport','ピックル ','ピックル'],['sport','ラン ','ラン'],['sport','Rexer ','ジム'],['study','英語30 ','英語'],['money','支払い ','支払い'],['life','寝る','寝る'],['life','体重 ','体重'],['life','挑戦：','挑戦']];
+function renderChips(){ const el=$('qchips'); if(!el) return; el.innerHTML=QCHIPS.map(([g,t,l])=>`<button type="button" class="chip" data-q="${esc(t)}"><i style="background:var(--c-${g})"></i>${l}</button>`).join(''); el.querySelectorAll('[data-q]').forEach(b=>b.addEventListener('click',()=>{ const q=$('q'); q.value=b.dataset.q; q.focus(); })); }
+function z2h(s){ return s.replace(/[０-９．]/g, ch=>String.fromCharCode(ch.charCodeAt(0)-0xFEE0)).replace(/．/g,'.'); }
+function parseDur(t){ let m; if((m=t.match(/(\d+(?:\.\d+)?)\s*(h|時間)(?:\s*(\d+)\s*分?)?/i))) return Math.round(parseFloat(m[1])*60+(Number(m[3])||0)); if((m=t.match(/(\d+)\s*(分|min)/i))) return Number(m[1]); if(/半/.test(t)&&/時間/.test(t)) return 90; return null; }
+function parseLevel(t){ if(/チャレンジ|格上|上級|大会|初めて|初の|初\s|強豪|試合/.test(t)) return 'チャレンジ'; if(/激し|きつ|ハード|ガチ|追い込|全力|本気/.test(t)) return 'きつめ'; if(/ゆる|軽く|流し|遊び|のんびり|リハビリ/.test(t)) return 'ゆるめ'; return 'ふつう'; }
+function parseTime(t){ const m=t.match(/(\d{1,2})[:：時](\d{2})?/); if(!m) return null; return `${pad(Number(m[1])%24)}:${pad(Number(m[2]||0))}`; }
+const LVM={'ゆるめ':0.7,'ふつう':1,'きつめ':1.5,'チャレンジ':2};
+function parseLine(raw){
+  const t=z2h(raw.trim()); if(!t) return null; const c=cfg();
+  // 挑戦
+  let m=t.match(/^挑戦[:：\s]*(.+)$/); if(m) return {g:'life', kind:'challenge', text:m[1].trim()};
+  // 体重（数字だけ）
+  m=t.match(/^(\d{2,3}(?:\.\d)?)\s*(kg|キロ)?$/i); if(m && Number(m[1])>=40 && Number(m[1])<=150) return {g:'life', kind:'weight', kg:Number(m[1])};
+  m=t.match(/体重\s*(\d{2,3}(?:\.\d)?)/); if(m) return {g:'life', kind:'weight', kg:Number(m[1])};
+  // 就寝・起床・朝ルーティン
+  if(/^(寝る|就寝|おやすみ|ねる)/.test(t)) return {g:'life', kind:'bed', time:parseTime(t)||NOW};
+  if(/朝ルーティン|朝ルーチン/.test(t)) return {g:'life', kind:'morning'};
+  // 運動
+  const SP=[['pickle',/ピックル|picklr|pickle|ピクル/i],['run',/ラン(?!チ)|走|run|jog|ジョグ/i],['golf',/ゴルフ|golf|ライザップ|打ちっ|ラウンド/i],['pilates',/ピラティス|pilates|zen/i],['rexer',/rexer|レクサー|ジム|筋トレ|gym/i],['tennis',/テニス|tennis/i]];
+  for(const [k,re] of SP){ if(re.test(t)){ const def=c.sports.find(x=>x[0]===k); return {g:'sport', kind:'sport', k, label:def?def[1]:(k==='tennis'?'テニス':k), dur:parseDur(t)||60, level:parseLevel(t), place:t.replace(/\d+(\.\d+)?\s*(h|時間|分|min)(\s*\d+\s*分)?/ig,'').replace(/ゆるめ|ゆるく|激しく|激しめ|きつめ|きつく|ハード|ガチ|チャレンジ|ふつう/g,'').replace(/\s+/g,' ').trim(), raw:t}; } }
+  // 英語・学習
+  if(/英語|english|morning line|シャドー|toefl|単語|リスニング|スピーキング|ライティング|リーディング|英会話/i.test(t)){ const mm=t.match(/(\d{1,3})\s*(分|min)?/); const n=mm?Number(mm[1]):30; const what=(t.match(/morning line|シャドーイング|シャドー|単語|toefl|英会話|リスニング|スピーキング|ライティング|リーディング/i)||[''])[0]; return {g:'study', kind:'study', min: n>0&&n<=300?n:30, what, raw:t}; }
+  // 食事
+  if(/朝食|昼食|夕食|晩ご飯|晩飯|昼飯|朝飯|食べた|kcal|カロリー|ランチ|ディナー|定食|弁当|プロテイン/.test(t)){ const kc=(t.match(/(\d{2,4})\s*(kcal|カロリー)/)||[])[1]; const slot=/朝/.test(t)?'朝':(/昼|ランチ/.test(t)?'昼':(/夜|夕|晩|ディナー/.test(t)?'夜':(HOUR<10?'朝':(HOUR<15?'昼':(HOUR<21?'夜':'間食'))))); return {g:'meal', kind:'meal', slot, kcal:kc?Number(kc):0, name:t.replace(/(\d{2,4})\s*(kcal|カロリー)/,'').replace(/^(朝食|昼食|夕食|ランチ|ディナー)[:：\s]*/,'').trim(), raw:t}; }
+  // お金：金額があれば支払い
+  const am=t.match(/(\d{3,6})\s*(円|yen|¥)?/); const yen=am?Number(am[1]):0;
+  if(yen>=100 || /支払|払った|買った|購入|代$/.test(t)){
+    const cat=/ローソン|セブン|ファミマ|ファミリーマート|コンビニ|スタバ|カフェ|ドトール|自販機|ナチュラルローソン|マルビル/i.test(t)?'コンビニ・カフェ':(/タクシー|go|uber(?!\s*eats)|s\.ride|ゴー/i.test(t)?'タクシー':(/電車|suica|スイカ|地下鉄|メトロ|jr|バス|交通|定期|pasmo/i.test(t)?'交通':(/uber\s*eats|ウーバー|出前|デリバリー|wolt/i.test(t)?'デリバリー':(/amazon|アマゾン|買|ユニクロ|服|本|薬|ドラッグ/i.test(t)?'買い物':(/ピックル|コート|ジム|ゴルフ|ラケット|シューズ|大会/i.test(t)?'スポーツ':(/ランチ|ディナー|定食|ラーメン|寿司|焼肉|飲み|居酒屋|レストラン|食|飯|丼|そば|うどん|カレー|パスタ|バー/.test(t)?'食事・外食':'その他'))))));
+    const method=/suica|スイカ/i.test(t)?'Suica':(/paypay|ペイペイ/i.test(t)?'PayPay':(/現金|キャッシュ/.test(t)?'現金':'カード'));
+    const note=t.replace(/(\d{3,6})\s*(円|yen|¥)?/,'').replace(/支払い|支払|払った|で$/g,'').replace(/\s+/g,' ').trim();
+    return {g:'money', kind:'pay', a:yen, cat, method, note, raw:t};
+  }
+  return {g:'', kind:'unknown', raw:t};
+}
+
+async function applyParsed(p, rawText){
+  const c=cfg(); const e=Object.assign({}, S.entries[TODAY]||{}); const acts=(e.actions||[]).slice(); const prev=S.entries[TODAY]; const t=NOW;
+  const saveE=async(msg, extraUndo)=>{ S.entries[TODAY]=e; rerender(); toastUndo(msg, async()=>{ S.entries[TODAY]=prev||{}; if(extraUndo) await extraUndo(); rerender(); await put('entries/'+TODAY, S.entries[TODAY]); }); await put('entries/'+TODAY, e); };
+  if(p.kind==='sport'){
+    const w=S.week||{}; const goal=(c.sports.find(x=>x[0]===p.k)||[])[2]||0; const pts=Math.round(p.dur/30*LVM[p.level]*10)/10;
+    acts.push({t, k:p.k, label:p.label, sport:true, place:p.place, dur:p.dur, level:p.level, note:'', pts, raw:p.raw}); e.actions=acts;
+    const sp2=Object.assign({}, w.sport||{}); sp2[p.k]=(sp2[p.k]||0)+1; const log2=JSON.parse(JSON.stringify(w.sportLog||{})); log2[TODAY]=(log2[TODAY]||[]).concat([p.k]);
+    const prevW=S.week; S.week=Object.assign({}, w, {sport:sp2, sportLog:log2});
+    const rem=goal?Math.max(0,goal-sp2[p.k]):0;
+    await saveE(`${p.label} ${p.dur}分・${p.level}（仮 ${pts}pt）${goal?(rem===0?`。今週${goal}回 達成！`:`。今週あと${rem}回`):''}`, async()=>{ S.week=prevW; await put('weeks/'+WEEK0, S.week||{}); });
+    await put('weeks/'+WEEK0, S.week); return;
+  }
+  if(p.kind==='study'){ e.study_min=(e.study_min||0)+p.min; acts.push({t,k:'study',label:`英語 ${p.min}分`, what:p.what, raw:p.raw}); e.actions=acts; const left=Math.max(0,c.englishMin-e.study_min); await saveE(left?`英語 +${p.min}分${p.what?`（${p.what}）`:''}。今日あと${left}分`:`英語 今日${e.study_min}分 達成！`); return; }
+  if(p.kind==='pay'){ e.cash=(e.cash||[]).concat([{a:p.a, note:p.note||p.cat, t, cat:p.cat, method:p.method, card:p.method!=='現金', raw:p.raw}]); S.entries[TODAY]=e; const ws=weekSpend(); const allow=Math.max(0,c.weeklyFrame-ws.total+(ws.days[TODAY]||0))/daysLeft; const left=allow-(ws.days[TODAY]||0); await saveE(`${p.a.toLocaleString()}円（${p.cat}・${p.method}）。今日あと${left>=0?fmtYen(left):'−'+fmtYen(-left)}`); return; }
+  if(p.kind==='meal'){ e.meals=(e.meals||[]).concat([{t, slot:p.slot, name:p.name||p.slot, kcal:p.kcal, p:0, raw:p.raw}]); const tot=e.meals.reduce((x,m)=>x+(Number(m.kcal)||0),0); await saveE(`${p.slot} ${p.name||''}${p.kcal?` ${p.kcal}kcal`:''}。今日 ${tot}kcal`); return; }
+  if(p.kind==='weight'){ const wt=latestWeight(); e.weight=p.kg; acts.push({t,k:'weight',label:`体重 ${p.kg}kg`}); e.actions=acts; await saveE(`体重 ${p.kg}kg。目標まで ${(p.kg-c.weightTarget).toFixed(1)}kg${wt&&wt.d!==TODAY?`・前回比 ${(p.kg-wt.kg)>0?'+':''}${(p.kg-wt.kg).toFixed(1)}`:''}`); return; }
+  if(p.kind==='bed'){ const d=HOUR<12?YDAY:TODAY; const tg=Object.assign({}, S.entries[d]||{}); const prevT=S.entries[d]; tg.bed=p.time; if(d===TODAY){ tg.actions=(tg.actions||[]).concat([{t,k:'bed',label:`就寝 ${p.time}`}]); } S.entries[d]=tg; rerender(); toastUndo(`就寝 ${p.time}${p.time<='00:30'||p.time>='18:00'?'。目標内。おやすみなさい':'。目標は0:30'}`, async()=>{ S.entries[d]=prevT||{}; rerender(); await put('entries/'+d, S.entries[d]); }); await put('entries/'+d, tg); return; }
+  if(p.kind==='morning'){ e.morning=true; acts.push({t,k:'morning',label:'朝ルーティン'}); e.actions=acts; await saveE('朝ルーティン できた'); return; }
+  if(p.kind==='challenge'){ if(HOUR<15||!e.challenge_am){ e.challenge_am=p.text; } else { e.challenge_pm=p.text; } await saveE(HOUR<15||!e.challenge_pm?`今日の挑戦：${p.text}`:`挑戦の振り返りを記録`); return; }
+  // メモ
+  acts.push({t,k:'note',label:rawText.trim()}); e.actions=acts; await saveE('メモとして記録しました'); 
+}
+
+function showPick(raw){
+  // 読み取れなかったとき：区分を選んでもらう
+  const box=document.createElement('div'); box.className='pick'; box.id='pick';
+  box.innerHTML=`<b style="font-size:14px">「${esc(raw)}」はどれ？</b><div class="chips">${[['sport','運動'],['study','学習'],['money','お金'],['meal','食事'],['life','生活'],['','メモ']].map(([g,l])=>`<button class="chip" data-g="${g}" data-pk="${g||'note'}">${l}</button>`).join('')}</div>`;
+  const host=$('v-home'); host.insertBefore(box, host.children[1]||null);
+  box.querySelectorAll('[data-pk]').forEach(b=>b.addEventListener('click', async()=>{ const g=b.dataset.pk; box.remove();
+    if(g==='sport'){ await applyParsed({g:'sport',kind:'sport',k:'other',label:raw.slice(0,12),dur:parseDur(raw)||60,level:parseLevel(raw),place:raw,raw}, raw); }
+    else if(g==='study'){ await applyParsed({g:'study',kind:'study',min:parseDur(raw)||30,what:'',raw}, raw); }
+    else if(g==='money'){ const a=Number((raw.match(/(\d{2,6})/)||[])[1]||0); if(!a){ toast('金額が読み取れませんでした。「ローソン 450」のように'); return; } await applyParsed({g:'money',kind:'pay',a,cat:'その他',method:'カード',note:raw.replace(/\d+/,'').trim(),raw}, raw); }
+    else if(g==='meal'){ await applyParsed({g:'meal',kind:'meal',slot:(HOUR<10?'朝':(HOUR<15?'昼':'夜')),kcal:Number((raw.match(/(\d{2,4})\s*kcal/)||[])[1]||0),name:raw,raw}, raw); }
+    else if(g==='life'){ await applyParsed({g:'life',kind:'challenge',text:raw}, raw); }
+    else { await applyParsed({kind:'note'}, raw); }
+  }));
+}
+function bindBar(){
+  $('qform').addEventListener('submit', async(ev)=>{ ev.preventDefault(); const q=$('q'); const raw=q.value.trim(); if(!raw) return; q.value=''; const p=parseLine(raw); if(!p) return; if(p.kind==='unknown'){ showPick(raw); return; } await applyParsed(p, raw); window.scrollTo({top:0,behavior:'smooth'}); });
+}
+
 function autoInsight(){
   const c=cfg(); const ws=weekSpend(); const st=weekStudy(); const sp=weekSport(); const over=ws.total-c.weeklyFrame; const parts=[];
   if(over>0) parts.push(`今週は${WD[today.getDay()]}曜までで${man(ws.total)}万円と、週の枠を${man(over)}万円超えています。<b>今日と明日はカードを使わない日</b>にできると流れが変わります。`); else parts.push(`今週の支出は${man(ws.total)}万円で枠内。このペースなら週末に${fmtYen(c.weeklyFrame-ws.total)}残ります。`);
@@ -588,7 +710,7 @@ function autoInsight(){
   return parts.join('');
 }
 
-function renderMoney(){
+function renderMoney(){ document.body.classList.remove('home');
   const c=cfg(); const ws=weekSpend(); const over=ws.total-c.weeklyFrame; const hist=S.hist||{}; const m=S.month||{}; const ms=monthSpend();
   const dayItems=DAYS.map(d=>{ const v=ws.days[d]||0; return {lab:WD[parse(d).getDay()], v, top:v?man(v):'', cls:v?'w':'wd'}; });
   let html=`<section class="dark"><div class="hd" style="align-items:baseline"><div><p class="mute" style="margin:0;font-size:12px">${weekLabel()}・変動費のみ</p><h1>今週のお金</h1></div><span class="mute" style="font-size:11px">${WD[today.getDay()]}曜</span></div>
@@ -743,7 +865,7 @@ async function load(){
   }
 }
 async function checkUpdate(){ try{ const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return; const v=(await r.json()).build; if(v && v!==BUILD && !$('upd')){ const d=document.createElement('div'); d.className='upd'; d.id='upd'; d.innerHTML=`<span>新しい版があります</span><button id="upd-go">更新する</button>`; document.body.appendChild(d); $('upd-go').addEventListener('click',()=>{ location.href=location.pathname+'?v='+v+location.hash; }); } }catch(_){} }
-function boot(){ checkUpdate(); setInterval(checkUpdate, 10*60*1000); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkUpdate(); }); renderNav('home'); route(); window.addEventListener('hashchange', route); load(); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && S.dbOk) load(); }); }
+function boot(){ bindBar(); checkUpdate(); setInterval(checkUpdate, 10*60*1000); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkUpdate(); }); renderNav('home'); route(); window.addEventListener('hashchange', route); load(); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && S.dbOk) load(); }); }
 boot();
 </script>
 </body>
