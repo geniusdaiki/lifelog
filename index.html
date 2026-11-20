@@ -240,6 +240,22 @@ body.home{padding-bottom:calc(84px + 96px + env(safe-area-inset-bottom))}
 @media (min-width: 1280px){
   .view.on{grid-template-columns:1fr 1fr 1fr}
 }
+/* ---- キム秘書 ---- */
+.kim{gap:12px}
+.kim .who{display:flex;align-items:center;gap:14px}
+.kim .who img{width:64px;height:64px;border-radius:32px;object-fit:cover;border:2px solid var(--acc);flex:0 0 auto;background:rgba(255,255,255,.1)}
+.kim .who h1{font-size:19px;line-height:1.4}
+.kim .brief{margin:0;font-size:13px;line-height:1.7;color:rgba(255,255,255,.9)}
+.kim .cal{display:flex;flex-direction:column;background:rgba(255,255,255,.06);border-radius:14px;padding:4px 12px}
+.kim .ev{display:grid;grid-template-columns:48px 4px 1fr;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.kim .ev:last-child{border-bottom:none}
+.kim .ev .tm{font-size:13px;font-weight:600;color:rgba(255,255,255,.7)}
+.kim .ev .cb{width:4px;align-self:stretch;border-radius:2px}
+.kim .ev b{font-size:14px;font-weight:600;display:block}
+.kim .ev small{display:block;font-size:12px;color:rgba(255,255,255,.6);margin-top:2px}
+.kim .ev.next .tm{color:#5EEAD4}
+.kim .ev.past{opacity:.45}
+.kim .dh{font-size:12px;color:rgba(255,255,255,.6);margin:8px 0 0}
 </style>
 </head>
 <body>
@@ -252,11 +268,11 @@ body.home{padding-bottom:calc(84px + 96px + env(safe-area-inset-bottom))}
   <div id="v-challenge" class="view"></div>
 </div>
 <nav id="nav"></nav>
-<div id="bar" class="ibar"><div class="qchips" id="qchips"></div><form id="qform" autocomplete="off"><input type="text" id="q" placeholder="例：豊洲picklr 2h 激しめ／ローソン 450／英語30 シャドーイング／83.9／寝る" enterkeyhint="send"><button type="submit" class="btn" id="qsend" aria-label="記録">↑</button></form></div>
+<div id="bar" class="ibar"><div class="qchips" id="qchips"></div><form id="qform" autocomplete="off"><input type="text" id="q" placeholder="キム秘書に一行で：ローソン 450／英語30／83.9／寝る" enterkeyhint="send"><button type="submit" class="btn" id="qsend" aria-label="記録">↑</button></form></div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const BUILD='20261120-1726';
+const BUILD='20261120-1835';
 // ---------- helpers ----------
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -293,7 +309,7 @@ function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.remove('
 // ---------- state ----------
 const S = {
   config: null, week: null, month: null, hist: null, places: null, insight: null,
-  entries: {}, events: null, ready: false, dbOk: null, saving: {}
+  entries: {}, events: null, ready: false, dbOk: null, saving: {}, cal: null, calErr: null
 };
 const DEFAULT_CONFIG = {
   weeklyFrame: 70000, monthlyCap: 300000, weightTarget: 79.9, weightDue: '2026-12-31',
@@ -560,10 +576,35 @@ function todayLine(){
   const ds=dayScoreOf(TODAY);
   return `<section class="dark" style="gap:8px"><div class="hd" style="align-items:baseline"><p class="mute" style="margin:0;font-size:12px">${dateLabel()}</p><span class="mute" style="font-size:11px">${PHASE==='pm'?`今日 ${ds.total}点`:''}</span></div><div class="line"><span class="lt">${parts.join('　')}</span><span class="mute" style="font-size:12px">週の残り枠 ${remain<0?'−':''}${man(Math.abs(remain))}万円・${weekLabel()}・詳しくは「週」へ</span></div></section>`;
 }
+// ---- キム秘書（Googleカレンダー連携）----
+const GCOL={'1':'#7986CB','2':'#33B679','3':'#8E24AA','4':'#E67C73','5':'#F6BF26','6':'#F4511E','7':'#039BE5','8':'#9AA1AD','9':'#3F51B5','10':'#0B8043','11':'#D50000'};
+function calOf(day){ return (S.cal||[]).map(e=>{ const s=new Date(e.start), en=new Date(e.end); return Object.assign({}, e, {s, en, day: e.allDay ? ymd(s) : ymd(s)}); }).filter(e=>e.day===day).sort((a,b)=>(b.allDay-a.allDay)||(a.s-b.s)); }
+function kimEv(e, nextId){ const now=new Date(); const past=!e.allDay && e.en<now; const loc=(e.location||'').split(/[（(,、]/)[0].slice(0,24);
+  return `<div class="ev ${e.id===nextId?'next':''} ${past?'past':''}"><span class="tm">${e.allDay?'終日':hm(e.s)}</span><span class="cb" style="background:${GCOL[e.color]||'#5EEAD4'}"></span><span><b>${esc(e.summary)}</b>${loc?`<small>${esc(loc)}</small>`:''}</span></div>`; }
+function kimHero(){
+  const greet = PHASE==='am'?'おはようございます':(PHASE==='day'?'お疲れさまです':'今日もお疲れさまでした');
+  const now=new Date(); const td=calOf(TODAY); const tm=calOf(TMRW);
+  const next=td.find(e=>!e.allDay && e.s>now) || null;
+  let brief='';
+  if(S.calErr) brief='カレンダーに接続できませんでした。少し時間をおいて開き直してください。';
+  else if(!S.cal) brief='今日の予定を読み込み中です…';
+  else if(PHASE==='pm'){ const f=tm.find(e=>!e.allDay); brief = tm.length ? `明日は${tm.length}件。最初は ${f?hm(f.s)+' '+esc(f.summary):esc(tm[0].summary)} です。今夜は早めに休みましょう。` : '明日は予定が入っていません。ゆっくり休んでくださいね。'; }
+  else if(next){ const min=Math.round((next.s-now)/60000); brief = `次は ${hm(next.s)} ${esc(next.summary)}（あと${min>=60?Math.floor(min/60)+'時間'+(min%60?min%60+'分':''):min+'分'}）。`; }
+  else brief = td.length ? '今日の予定はすべて終わりました。' : '今日は予定が入っていません。';
+  const list = (S.cal && !S.calErr) ? (PHASE==='pm'
+      ? (td.length?`<p class="dh">今日</p><div class="cal">${td.map(e=>kimEv(e,'')).join('')}</div>`:'') + (tm.length?`<p class="dh">明日（${parse(TMRW).getMonth()+1}/${parse(TMRW).getDate()} ${WD[parse(TMRW).getDay()]}）</p><div class="cal">${tm.map(e=>kimEv(e,'')).join('')}</div>`:'')
+      : (td.length?`<div class="cal">${td.map(e=>kimEv(e, next?.id)).join('')}</div>`:'')) : '';
+  return `<section class="dark kim"><div class="who"><img src="kim.jpg" alt="キム秘書"><div><p class="mute" style="margin:0 0 2px;font-size:12px">${dateLabel()} ${NOW}・秘書 キム・ソア</p><h1>大生さん、${greet}。<br>ご用は何ですか？</h1></div></div><p class="brief">${brief}</p>${list}</section>`;
+}
+async function loadCal(){
+  try{ const r=await fetch(KIM+'?action=days&from='+TODAY+'&n=2',{headers:{'x-app-pin':PIN}}); const j=await r.json(); if(!r.ok) throw new Error(j.error||r.status); S.cal=j.events||[]; S.calErr=null; }
+  catch(e){ S.calErr=String(e.message||e); }
+  if((location.hash||'#home')==='#home') rerender();
+}
 function renderHome(){
   const SEC=buildSections();
   document.body.classList.add('home');
-  $('v-home').innerHTML = missionBoard() + SEC.tl + SEC.miss + status();
+  $('v-home').innerHTML = kimHero() + missionBoard() + SEC.tl + SEC.miss + status();
   bindHome(); renderChips();
 }
 function renderWeek(){
@@ -892,6 +933,7 @@ function renderChallenge(){
 
 // ---------- persistence (Supabase edge function) ----------
 const BASE = 'https://ywfarznprmzufzpkgjgb.supabase.co/functions/v1/app';
+const KIM = 'https://ywfarznprmzufzpkgjgb.supabase.co/functions/v1/kim';
 let PIN = ''; try{ PIN = localStorage.getItem('ll_pin')||''; }catch(e){}
 async function api(path, opts={}){
   const r = await fetch(BASE+path, Object.assign({headers:{'x-app-pin':PIN,'content-type':'application/json'}}, opts));
@@ -929,7 +971,7 @@ async function load(){
     S.config=by['app/config']||null; S.week=by['weeks/'+WEEK0]||null; S.month=by['months/'+MONTH0]||null;
     S.hist=by['history/money']||null; S.places=by['history/places']||null; S.insight=by['insights/latest']||null;
     const ent={}; Object.keys(by).forEach(p=>{ if(p.startsWith('entries/')) ent[p.slice(8)]=by[p]; }); S.entries=ent;
-    S.dbOk=true; S.ready=true; rerender();
+    S.dbOk=true; S.ready=true; rerender(); loadCal();
   }catch(e){
     if(e.pin){ showPin(PIN?'暗証番号が違います':undefined); return; }
     S.dbOk=false; S.ready=true; S.err=String(e.message||e); rerender();
