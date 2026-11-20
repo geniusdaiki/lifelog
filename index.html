@@ -188,6 +188,36 @@ body.home{padding-bottom:calc(84px + 96px + env(safe-area-inset-bottom))}
 .pick .chips .chip[data-g=sport]{border-color:var(--c-sport);color:var(--c-sport)}.pick .chips .chip[data-g=study]{border-color:var(--c-study);color:var(--c-study)}.pick .chips .chip[data-g=money]{border-color:var(--c-money);color:var(--c-money)}.pick .chips .chip[data-g=meal]{border-color:var(--c-meal);color:var(--c-meal)}.pick .chips .chip[data-g=life]{border-color:var(--c-life);color:var(--c-life)}
 .tl .it .bd .gtag{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:6px;vertical-align:1px;color:#fff}
 @media (min-width:900px){.ibar{left:220px;right:auto;width:560px;bottom:24px;border:1px solid var(--line);border-radius:18px}.ibar form,.qchips{max-width:none}}
+.card{box-shadow:0 1px 2px rgba(20,23,28,.04),0 8px 24px -16px rgba(20,23,28,.18);border-radius:20px}
+.board{gap:10px}
+.mlist{display:flex;flex-direction:column}
+.ms{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:start;padding:11px 0;border-bottom:1px solid var(--line);animation:slidein .4s ease-out both}
+.ms:last-child{border-bottom:0}
+.ms .ck{width:24px;height:24px;border-radius:12px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;margin-top:2px;transition:background .3s,border-color .3s}
+.ms .mb{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ms .mh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ms .mh b{font-size:15px;font-weight:700}
+.ms .mh b .wk{font-size:10px;font-weight:600;color:var(--mute);margin-left:6px;background:var(--soft);border-radius:4px;padding:1px 5px}
+.ms .mn{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ms .mn small{font-size:11px;font-weight:500;color:var(--mute)}
+.ms .mbar{height:6px;border-radius:3px;background:var(--soft);overflow:hidden}
+.ms .mbar i{display:block;height:100%;border-radius:3px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.ms .mhint{font-size:12px;color:var(--mute);line-height:1.4}
+.ms.urgent .mhint{color:var(--amber);font-weight:600}
+.ms.done .mh b,.ms.done .mn{color:var(--mute);font-weight:600}
+.ms.done .mhint{color:var(--acc)}
+.donebox summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--mute);padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px}
+.donebox summary::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--acc)}
+.cele{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(20,23,28,.35);animation:fadein .2s ease-out both;pointer-events:none}
+.cele.out{animation:fadeout .4s ease-in both}
+.cele-in{background:#fff;border-radius:24px;padding:26px 30px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;animation:popin .5s cubic-bezier(.2,.9,.3,1.4) both;box-shadow:0 30px 60px -20px rgba(0,0,0,.4);max-width:300px}
+.cele-in b{font-size:20px}.cele-in span{font-size:13px;color:var(--mute)}
+.cele-ck{width:72px;height:72px;border-radius:36px;background:var(--acc);display:flex;align-items:center;justify-content:center;animation:popin .6s .1s cubic-bezier(.2,.9,.3,1.6) both;box-shadow:0 10px 30px rgba(15,118,110,.4)}
+.cele i{position:absolute;top:45%;width:10px;height:14px;border-radius:2px;background:var(--c);animation:confetti 1.3s var(--d) cubic-bezier(.2,.7,.4,1) both}
+@keyframes confetti{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(calc(var(--x) * 160px), 260px) rotate(540deg);opacity:0}}
+@keyframes popin{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes fadeout{from{opacity:1}to{opacity:0}}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
 @keyframes ringfill{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:var(--off)}}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
@@ -226,7 +256,7 @@ body.home{padding-bottom:calc(84px + 96px + env(safe-area-inset-bottom))}
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const BUILD='20261120-1710';
+const BUILD='20261120-1726';
 // ---------- helpers ----------
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -533,7 +563,7 @@ function todayLine(){
 function renderHome(){
   const SEC=buildSections();
   document.body.classList.add('home');
-  $('v-home').innerHTML = todayLine() + SEC.tl + SEC.miss + status();
+  $('v-home').innerHTML = missionBoard() + SEC.tl + SEC.miss + status();
   bindHome(); renderChips();
 }
 function renderWeek(){
@@ -549,7 +579,7 @@ let LAST_UNDO=null;
 function toastUndo(msg, undo){ const t=$('toast'); t.innerHTML=`<span>${esc(msg)}</span><button id="undo">取り消す</button>`; t.classList.add('on','undo'); clearTimeout(toast._t); LAST_UNDO=undo; $('undo').addEventListener('click', async()=>{ t.classList.remove('on','undo'); if(LAST_UNDO){ await LAST_UNDO(); LAST_UNDO=null; toast('取り消しました'); } }); toast._t=setTimeout(()=>{ t.classList.remove('on','undo'); LAST_UNDO=null; }, 6000); }
 
 async function record(k, handleId){
-  const c=cfg(); const e=Object.assign({}, S.entries[TODAY]||{}); const acts=(e.actions||[]).slice(); const t=NOW;
+  CELEBRATE_OK=true; const c=cfg(); const e=Object.assign({}, S.entries[TODAY]||{}); const acts=(e.actions||[]).slice(); const t=NOW;
   const sport=c.sports.find(s=>s[0]===k);
   const addHandled = ()=>{ if(handleId) e.handled=(e.handled||[]).concat([Number(handleId)]); };
   if(sport){
@@ -624,6 +654,47 @@ function bindHome(){
 }
 
 
+
+// ===== 今日のミッション（優先順：お金 → 英語 → 運動 → 生活 → 体重）=====
+function missions(){
+  const c=cfg(); const e=S.entries[TODAY]||{}; const ws=weekSpend(); const sp=weekSport(); const out=[];
+  const remain=c.weeklyFrame-ws.total; const allow=Math.max(0,remain)/daysLeft; const ts=ws.days[TODAY]||0;
+  out.push({k:'money', g:'money', name:'お金', cur:ts, goal:Math.round(allow), unit:'円', fmt:(v)=>fmtYen(v), done: ts<=allow && (PHASE==='pm'), ok: ts<=allow, inverse:true,
+    hint: ts<=allow ? `今日あと ${fmtYen(allow-ts)} 使える（週の残り ${remain<0?'−':''}${man(Math.abs(remain))}万円）` : `今日の枠を ${fmtYen(ts-allow)} 超過。ここから先はゼロで`, pri:1});
+  const st=e.study_min||0;
+  out.push({k:'study', g:'study', name:'英語', cur:st, goal:c.englishMin, unit:'分', done: st>=c.englishMin, ok: st>=c.englishMin, hint: st>=c.englishMin?'今日の分は完了':(st?`あと ${c.englishMin-st}分。帰りの電車で`:`通勤30分＋夜30分`), pri:2});
+  // 運動：残りがある種目。緊急度（残り回数 ≥ 残り日数）を優先
+  const todaySports=new Set((e.actions||[]).filter(a=>a.sport).map(a=>a.k));
+  c.sports.forEach(([k,n,g])=>{ const d=sp.sp[k]||0; const rem=Math.max(0,g-d); const name=n.replace('朝の','').replace('ピックルボール','ピックル'); const did=todaySports.has(k);
+    if(rem===0) out.push({k, g:'sport', name, cur:d, goal:g, unit:'回', done:true, ok:true, hint:`今週の${g}回 達成`, pri:3.9, weekly:true});
+    else out.push({k, g:'sport', name, cur:d, goal:g, unit:'回', done:did, ok:did, weekly:true, urgent: rem>=daysLeft, hint: did?`今日やった。今週あと${rem}回`:(rem>=daysLeft?`今日やらないと届かない（あと${rem}回・${daysLeft}日）`:(rem===1?'今日やれば今週達成':`今週あと${rem}回（あと${daysLeft}日）`)), pri: rem>=daysLeft?2.5:3}); });
+  const isWd=today.getDay()>=1&&today.getDay()<=5;
+  if(isWd) out.push({k:'morning', g:'life', name:'朝ルーティン', cur:e.morning?1:0, goal:1, unit:'', done:!!e.morning, ok:!!e.morning, hint:e.morning?'7時起床→朝ジム→出社 できた':'7時起床→朝ジムかピックル→出社', pri:4});
+  out.push({k:'challenge', g:'life', name:'今日の挑戦', cur:(e.challenge_am?1:0)+(e.challenge_pm?1:0), goal:2, unit:'', done:!!(e.challenge_am&&e.challenge_pm), ok:!!e.challenge_am, hint: e.challenge_pm?'振り返りまで完了':(e.challenge_am?`宣言済み「${e.challenge_am.slice(0,18)}」→ 夜に振り返り`:'「挑戦：〇〇」と書いて宣言'), pri:4.5});
+  if(today.getDay()===6 || e.weight) out.push({k:'weight', g:'life', name:'体重', cur:e.weight||0, goal:c.weightTarget, unit:'kg', done:!!e.weight, ok:!!e.weight, hint:e.weight?`${e.weight}kg・目標まで ${(e.weight-c.weightTarget).toFixed(1)}kg`:'土曜は測定日。起きてトイレの後に', pri:5});
+  out.push({k:'bed', g:'life', name:'就寝 0:30', cur:0, goal:1, unit:'', done:!!e.bed, ok:!!e.bed, hint:e.bed?`${e.bed} に就寝`:'寝るときに「寝る」と送る', pri:6});
+  return out.sort((a,b)=>(a.done===b.done?a.pri-b.pri:(a.done?1:-1)));
+}
+let LAST_DONE=null, CELEBRATE_OK=false;
+function missionBoard(){
+  const ms=missions(); const done=ms.filter(m=>m.done); const todo=ms.filter(m=>!m.done);
+  // 達成の検知 → 演出
+  const nowDone=new Set(done.map(m=>m.k)); if(LAST_DONE && CELEBRATE_OK){ const newly=[...nowDone].filter(k=>!LAST_DONE.has(k)); if(newly.length){ const m=done.find(x=>x.k===newly[0]); setTimeout(()=>celebrate(m), 50); } } LAST_DONE=nowDone; CELEBRATE_OK=false;
+  const pct=ms.length?done.length/ms.length*100:0;
+  const row=(m)=>{ const p=m.inverse?Math.min(100, m.goal?m.cur/m.goal*100:0):Math.min(100, m.goal?m.cur/m.goal*100:0); const col=m.done?'var(--acc)':(m.urgent||(m.inverse&&!m.ok)?'var(--amber)':`var(--c-${m.g})`);
+    const num = m.k==='weight' ? (m.cur?`${m.cur}<small>kg</small>`:'<small>未測定</small>') : (m.unit==='円' ? `${m.cur.toLocaleString()}<small> / ${m.goal.toLocaleString()}円</small>` : (m.goal>1||m.unit ? `${m.cur}<small> / ${m.goal}${m.unit}</small>` : (m.done?'✓':'—')));
+    return `<div class="ms ${m.done?'done':''} ${m.urgent?'urgent':''}" data-ms="${m.k}"><span class="ck" style="${m.done?`background:${col};border-color:${col}`:`border-color:${col}`}">${m.done?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>':''}</span><div class="mb"><div class="mh"><b>${m.name}${m.weekly?'<small class="wk">今週</small>':''}</b><span class="mn">${num}</span></div><div class="mbar"><i style="width:${m.k==='bed'?(m.done?100:0):p}%;background:${col}"></i></div><span class="mhint">${m.hint}</span></div></div>`; };
+  return `<section class="card board"><div class="hd"><div><p class="mute" style="margin:0 0 2px;font-size:12px">${dateLabel()}・${PHASE==='am'?'おはようございます':(PHASE==='day'?'こんにちは':'おつかれさまです')}</p><h2 style="font-size:18px">今日のミッション</h2></div>${ring(pct,56,6,'var(--acc)','var(--line)',`${done.length}`,`/ ${ms.length}`,0.1,16)}</div>
+  <div class="mlist">${todo.slice(0,4).map(row).join('')}</div>
+  ${todo.length>4?`<details class="donebox"><summary>ほかの目標 ${todo.length-4}件</summary><div class="mlist">${todo.slice(4).map(row).join('')}</div></details>`:''}
+  ${done.length?`<details class="donebox" ${PHASE==='pm'?'open':''}><summary>できた ${done.length}件</summary><div class="mlist">${done.map(row).join('')}</div></details>`:''}</section>`;
+}
+function celebrate(m){
+  if(!m) return; const el=document.createElement('div'); el.className='cele'; el.innerHTML=`<div class="cele-in"><div class="cele-ck"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></div><b>${esc(m.name)} 達成</b><span>${esc(m.hint)}</span></div>${[...Array(18)].map((_,i)=>`<i style="--x:${(Math.random()*2-1).toFixed(2)};--d:${(Math.random()*0.4).toFixed(2)}s;--c:${['#0F766E','#FCD34D','#DB2777','#1D4ED8','#7C3AED'][i%5]};left:${(50+(Math.random()*40-20)).toFixed(0)}%"></i>`).join('')}`;
+  document.body.appendChild(el); if(navigator.vibrate) try{ navigator.vibrate([20,40,20]); }catch(_){}
+  setTimeout(()=>el.classList.add('out'),1500); setTimeout(()=>el.remove(),1900);
+}
+
 // ===== 一行入力の読み取り =====
 const QCHIPS=[['sport','ピックル ','ピックル'],['sport','ラン ','ラン'],['sport','Rexer ','ジム'],['study','英語30 ','英語'],['money','支払い ','支払い'],['life','寝る','寝る'],['life','体重 ','体重'],['life','挑戦：','挑戦']];
 function renderChips(){ const el=$('qchips'); if(!el) return; el.innerHTML=QCHIPS.map(([g,t,l])=>`<button type="button" class="chip" data-q="${esc(t)}"><i style="background:var(--c-${g})"></i>${l}</button>`).join(''); el.querySelectorAll('[data-q]').forEach(b=>b.addEventListener('click',()=>{ const q=$('q'); q.value=b.dataset.q; q.focus(); })); }
@@ -661,7 +732,7 @@ function parseLine(raw){
 }
 
 async function applyParsed(p, rawText){
-  const c=cfg(); const e=Object.assign({}, S.entries[TODAY]||{}); const acts=(e.actions||[]).slice(); const prev=S.entries[TODAY]; const t=NOW;
+  CELEBRATE_OK=true; const c=cfg(); const e=Object.assign({}, S.entries[TODAY]||{}); const acts=(e.actions||[]).slice(); const prev=S.entries[TODAY]; const t=NOW;
   const saveE=async(msg, extraUndo)=>{ S.entries[TODAY]=e; rerender(); toastUndo(msg, async()=>{ S.entries[TODAY]=prev||{}; if(extraUndo) await extraUndo(); rerender(); await put('entries/'+TODAY, S.entries[TODAY]); }); await put('entries/'+TODAY, e); };
   if(p.kind==='sport'){
     const w=S.week||{}; const goal=(c.sports.find(x=>x[0]===p.k)||[])[2]||0; const pts=Math.round(p.dur/30*LVM[p.level]*10)/10;
