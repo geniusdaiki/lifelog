@@ -272,7 +272,7 @@ body.home{padding-bottom:calc(84px + 96px + env(safe-area-inset-bottom))}
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const BUILD='20261120-1835';
+const BUILD='20261120-2046';
 // ---------- helpers ----------
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -759,14 +759,17 @@ function parseLine(raw){
   for(const [k,re] of SP){ if(re.test(t)){ const def=c.sports.find(x=>x[0]===k); return {g:'sport', kind:'sport', k, label:def?def[1]:(k==='tennis'?'テニス':k), dur:parseDur(t)||60, level:parseLevel(t), place:t.replace(/\d+(\.\d+)?\s*(h|時間|分|min)(\s*\d+\s*分)?/ig,'').replace(/ゆるめ|ゆるく|激しく|激しめ|きつめ|きつく|ハード|ガチ|チャレンジ|ふつう/g,'').replace(/\s+/g,' ').trim(), raw:t}; } }
   // 英語・学習
   if(/英語|english|morning line|シャドー|toefl|単語|リスニング|スピーキング|ライティング|リーディング|英会話/i.test(t)){ const mm=t.match(/(\d{1,3})\s*(分|min)?/); const n=mm?Number(mm[1]):30; const what=(t.match(/morning line|シャドーイング|シャドー|単語|toefl|英会話|リスニング|スピーキング|ライティング|リーディング/i)||[''])[0]; return {g:'study', kind:'study', min: n>0&&n<=300?n:30, what, raw:t}; }
+  // お金の言い方（「25000円使った」など）は食事より優先
+  const tn=t.replace(/(\d),(?=\d{3})/g,'$1');
+  const isMoney=/(\d{3,6})\s*(円|yen|¥)/i.test(tn) || (/使った|払った|支払|買った|購入/.test(tn) && /\d{3,6}/.test(tn));
   // 食事
-  if(/朝食|昼食|夕食|晩ご飯|晩飯|昼飯|朝飯|食べた|kcal|カロリー|ランチ|ディナー|定食|弁当|プロテイン/.test(t)){ const kc=(t.match(/(\d{2,4})\s*(kcal|カロリー)/)||[])[1]; const slot=/朝/.test(t)?'朝':(/昼|ランチ/.test(t)?'昼':(/夜|夕|晩|ディナー/.test(t)?'夜':(HOUR<10?'朝':(HOUR<15?'昼':(HOUR<21?'夜':'間食'))))); return {g:'meal', kind:'meal', slot, kcal:kc?Number(kc):0, name:t.replace(/(\d{2,4})\s*(kcal|カロリー)/,'').replace(/^(朝食|昼食|夕食|ランチ|ディナー)[:：\s]*/,'').trim(), raw:t}; }
+  if(!isMoney && /朝食|昼食|夕食|晩ご飯|晩飯|昼飯|朝飯|食べた|kcal|カロリー|ランチ|ディナー|定食|弁当|プロテイン/.test(t)){ const kc=(t.match(/(\d{2,4})\s*(kcal|カロリー)/)||[])[1]; const slot=/朝/.test(t)?'朝':(/昼|ランチ/.test(t)?'昼':(/夜|夕|晩|ディナー/.test(t)?'夜':(HOUR<10?'朝':(HOUR<15?'昼':(HOUR<21?'夜':'間食'))))); return {g:'meal', kind:'meal', slot, kcal:kc?Number(kc):0, name:t.replace(/(\d{2,4})\s*(kcal|カロリー)/,'').replace(/^(朝食|昼食|夕食|ランチ|ディナー)[:：\s]*/,'').trim(), raw:t}; }
   // お金：金額があれば支払い
-  const am=t.match(/(\d{3,6})\s*(円|yen|¥)?/); const yen=am?Number(am[1]):0;
-  if(yen>=100 || /支払|払った|買った|購入|代$/.test(t)){
+  const am=tn.match(/(\d{3,6})\s*(円|yen|¥)?/); const yen=am?Number(am[1]):0;
+  if(yen>=100 || /支払|払った|使った|買った|購入|代$/.test(t)){
     const cat=/ローソン|セブン|ファミマ|ファミリーマート|コンビニ|スタバ|カフェ|ドトール|自販機|ナチュラルローソン|マルビル/i.test(t)?'コンビニ・カフェ':(/タクシー|go|uber(?!\s*eats)|s\.ride|ゴー/i.test(t)?'タクシー':(/電車|suica|スイカ|地下鉄|メトロ|jr|バス|交通|定期|pasmo/i.test(t)?'交通':(/uber\s*eats|ウーバー|出前|デリバリー|wolt/i.test(t)?'デリバリー':(/amazon|アマゾン|買|ユニクロ|服|本|薬|ドラッグ/i.test(t)?'買い物':(/ピックル|コート|ジム|ゴルフ|ラケット|シューズ|大会/i.test(t)?'スポーツ':(/ランチ|ディナー|定食|ラーメン|寿司|焼肉|飲み|居酒屋|レストラン|食|飯|丼|そば|うどん|カレー|パスタ|バー/.test(t)?'食事・外食':'その他'))))));
     const method=/suica|スイカ/i.test(t)?'Suica':(/paypay|ペイペイ/i.test(t)?'PayPay':(/現金|キャッシュ/.test(t)?'現金':'カード'));
-    const note=t.replace(/(\d{3,6})\s*(円|yen|¥)?/,'').replace(/支払い|支払|払った|で$/g,'').replace(/\s+/g,' ').trim();
+    const note=tn.replace(/(\d{3,6})\s*(円|yen|¥)?/,'').replace(/^(いま|今)/,'').replace(/支払い|支払|払った|使った|で$/g,'').replace(/で\s*$/,'').replace(/\s+/g,' ').trim();
     return {g:'money', kind:'pay', a:yen, cat, method, note, raw:t};
   }
   return {g:'', kind:'unknown', raw:t};
