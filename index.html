@@ -138,11 +138,6 @@ nav a.on{color:var(--acc);font-weight:700}
 .tmr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
 .tmr:last-child{border-bottom:0}
 .tmr .tg{flex:0 0 52px;font-size:12px;color:var(--mute);padding-top:2px}
-.recg{display:flex;flex-direction:column;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}
-.recg:last-of-type{border-bottom:0}
-.recg .gh{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.04em}
-.recg .gh i{width:8px;height:8px;border-radius:2px;display:inline-block}
-.recg .rec{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
 .rec button[data-g=sport] .ico{background:var(--c-sport2);color:var(--c-sport)}.rec button[data-g=sport].done{border-color:var(--c-sport);background:var(--c-sport2)}.rec button[data-g=sport].done .ico{background:var(--c-sport)}.rec button[data-g=sport] .n{color:var(--c-sport)}
 .rec button[data-g=study] .ico{background:var(--c-study2);color:var(--c-study)}.rec button[data-g=study].done{border-color:var(--c-study);background:var(--c-study2)}.rec button[data-g=study].done .ico{background:var(--c-study)}.rec button[data-g=study] .n{color:var(--c-study)}
 .rec button[data-g=money] .ico{background:var(--c-money2);color:var(--c-money)}.rec button[data-g=money].done{border-color:var(--c-money);background:var(--c-money2)}.rec button[data-g=money].done .ico{background:var(--c-money)}.rec button[data-g=money] .n{color:var(--c-money)}
@@ -163,6 +158,17 @@ nav a.on{color:var(--acc);font-weight:700}
 .sheet label{font-size:12px;color:var(--mute);display:block;margin-bottom:4px}
 .sheet .acts{display:flex;gap:8px;padding-top:4px}.sheet .acts .btn{flex:1;padding:13px}
 @media (min-width:900px){.sheet{left:220px;right:auto;width:480px;border-radius:20px;bottom:24px}}
+.recg{display:grid;grid-template-columns:40px 1fr;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.recg:last-of-type{border-bottom:0}
+.recg .gh{display:flex;flex-direction:column;align-items:flex-start;gap:3px;font-size:11px;font-weight:700}
+.recg .gh i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.recg .rec{display:flex;gap:6px}
+.rec button{flex:1 1 0;min-width:0;padding:8px 2px 7px;gap:4px;font-size:10px;border-radius:12px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec button .ico{width:30px;height:30px;border-radius:15px}
+.rec button .ico svg{width:16px;height:16px}
+.rec button .n{top:2px;right:3px;font-size:9px;padding:0 4px}
+.recg .rec.one button{flex:0 0 calc(25% - 5px)}
+@media (min-width:900px){.rec button{padding:10px 4px;font-size:11px}}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
 @keyframes ringfill{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:var(--off)}}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
@@ -379,7 +385,7 @@ function misses(){
   const c=cfg(); const out=[]; const e=S.entries[TODAY]||{}; const acts=todayActions(); const hd=handled(); const ev=eventsOf(TODAY);
   const sportToday=new Set(acts.filter(a=>a.sport).map(a=>a.k).concat((S.week?.sportLog||{})[TODAY]||[]));
   // 金額のない支払い
-  const blank=ev.filter(x=>x.type==='payment'&&!evAmount(x)&&!hd.has(x.id));
+  const blank=[]; // 支払いショートカットは廃止。金額なしの検出は出さない
   blank.forEach(x=>out.push({id:'pay'+x.id, kind:'pay', ev:x, title:`${x.t} 支払いを検出${x.card?`（${esc(x.card.replace(/　/g,' ').slice(0,14))}）`:''}`, sub:'金額が届いていません。入れると今日の枠に反映します'}));
   // ジム等に到着したのに運動の記録がない
   ev.filter(x=>x.type==='arrive'&&!hd.has(x.id)).forEach(x=>{ const m=PLACE_SPORT.find(([re])=>re.test(x.place||'')); if(m&&!sportToday.has(m[1])) out.push({id:'arr'+x.id, kind:'sport', ev:x, k:m[1], title:`${x.t} ${esc(x.place)} に到着 → 運動の記録がありません`, sub:'記録すると今週の回数に入ります'}); });
@@ -396,7 +402,7 @@ function misses(){
 function timelineItems(){
   const items=[]; const hd=handled(); const e=S.entries[TODAY]||{}; const c=cfg();
   eventsOf(TODAY).forEach(x=>{
-    if(x.type==='payment'){ const a=evAmount(x); if(!a && hd.has(x.id)) return; if(!a) { items.push({t:x.t, cls:'money', html:`支払いを検出 <span class="sub">金額未入力 → 下の「漏れ」から</span>`}); return; } items.push({t:x.t, cls:'money', html:`<b>${a.toLocaleString()}円</b> ${esc(evMerchant(x))}<span class="sub">${esc(x.card||'')}</span>`}); }
+    if(x.type==='payment'){ const a=evAmount(x); if(!a) return; items.push({t:x.t, cls:'money', html:`<b>${a.toLocaleString()}円</b> ${esc(evMerchant(x))}<span class="sub">${esc(x.card||'')}</span>`}); }
     else if(x.type==='arrive'){ items.push({t:x.t, cls:'place', html:`<b>${esc(x.place||'場所')}</b> に到着${isOffice(x.place)?`<span class="sub">${x.t<=c.officeBest?'9時前。ベスト':(x.t<=c.officeBy?'10時前。OK':'10時を過ぎています')}</span>`:''}`}); }
     else if(x.type==='leave'){ items.push({t:x.t, cls:'place', html:`${esc(x.place||'場所')} を出発`}); }
     else if(x.type==='sleep'||x.type==='health'){ const p=x.payload||{}; items.push({t:x.t, cls:'habit', html:`ヘルスケア <span class="sub">${esc(JSON.stringify(p).slice(0,60))}</span>`}); }
@@ -404,8 +410,8 @@ function timelineItems(){
   });
   (e.cash||[]).forEach(cs=>{ if(cs.t) items.push({t:cs.t, cls:'money', html:`<b>${Number(cs.a).toLocaleString()}円</b> ${esc(cs.note||'現金')}<span class="sub">${esc([cs.cat,cs.method||(cs.card?'カード速報':'現金')].filter(Boolean).join('・'))}</span>`}); });
   (e.meals||[]).forEach(m=>{ items.push({t:m.t||'--:--', cls:'meal', html:`<b>${esc(m.slot||'')} ${esc(m.name||'')}</b><span class="sub">${m.kcal?`${m.kcal}kcal`:''}${m.p?`・タンパク質 ${m.p}g`:''}</span>`}); });
-  (e.actions||[]).forEach(a=>{ items.push({t:a.t, cls:a.sport?'sport':(a.k==='study'?'study':'habit'), html:`<b>${esc(a.label)}</b>${a.note?`<span class="sub">${esc(a.note)}</span>`:''}`}); });
-  items.push({t:NOW, cls:'now', now:true, html:`<span class="gap" style="color:var(--gray);font-size:12px">いま。${S.events?'ショートカットの到着・支払い・手入力がここに並びます':'イベント読み込み中…'}</span>`});
+  (e.actions||[]).forEach(a=>{ const meta=[a.place, a.dur?`${a.dur}分`:'', a.level, a.what, a.ai_pts!=null?`AI判定 ${a.ai_pts}/10`:(a.pts?`仮 ${a.pts}pt`:'')].filter(Boolean).join('・'); items.push({t:a.t, cls:a.sport?'sport':(a.k==='study'?'study':'habit'), html:`<b>${esc(a.label)}</b>${meta?`<span class="sub">${esc(meta)}</span>`:''}${a.note?`<span class="sub">${esc(a.note)}</span>`:''}${a.ai_note?`<span class="sub" style="color:var(--acc)">${esc(a.ai_note)}</span>`:''}`}); });
+  items.push({t:NOW, cls:'now', now:true, html:`<span class="gap" style="color:var(--gray);font-size:12px">いま。${S.events?'記録したものが時系列で並びます':'イベント読み込み中…'}</span>`});
   items.sort((a,b)=>a.t<b.t?-1:(a.t>b.t?1:(a.now?1:-1)));
   return items;
 }
@@ -433,14 +439,14 @@ function renderHome(){
   const svg=(p)=>`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
   const sportBtns=c.sports.map(([k,n])=>btn('sport',k, n.replace('朝の','').replace('ピックルボール','ピックル'), sportIcon(k,'currentColor'), acts.filter(a=>a.k===k).length)).join('');
   const studyN=e.study_min||0; const meals=e.meals||[]; const kcal=meals.reduce((a,m)=>a+(Number(m.kcal)||0),0); const paysN=(e.cash||[]).length;
-  const grp=(g,name,inner)=>`<div class="recg"><span class="gh" style="color:var(--c-${g})"><i style="background:var(--c-${g})"></i>${name}</span><div class="rec">${inner}</div></div>`;
+  const grp=(g,name,inner,one)=>`<div class="recg"><span class="gh" style="color:var(--c-${g})"><i style="background:var(--c-${g})"></i>${name}</span><div class="rec ${one?'one':''}">${inner}</div></div>`;
   SEC.rec = card('記録する',
     grp('sport','運動', sportBtns)
-   +grp('study','学習', btn('study','study30','英語 +30',svg(ICONS.study), studyN?`${studyN}分`:0)+btn('study','study60','英語 +60',svg(ICONS.study), 0))
-   +grp('money','お金', btn('money','pay','支払い',svg(ICONS.money), paysN?`${paysN}件`:0)+btn('money','cash','現金',svg('<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10.5h3.5a1.5 1.5 0 0 1 0 3h-2a1.5 1.5 0 0 0 0 3h3.5"/>'),0))
-   +grp('meal','食事', btn('meal','meal','食事',svg('<path d="M4 3v7a3 3 0 0 0 6 0V3M7 3v18M17 3c-2 0-3 3-3 6v3h3v9"/>'), kcal?`${kcal}kcal`:(meals.length?`${meals.length}食`:0)))
+   +grp('study','学習', btn('study','study','英語',svg(ICONS.study), studyN?`${studyN}分`:0)+btn('study','study30','+30 すぐ',svg('<path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/>'), 0), true)
+   +grp('money','お金', btn('money','pay','支払い',svg(ICONS.money), paysN?`${paysN}件`:0)+btn('money','cash','現金',svg('<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10.5h3.5a1.5 1.5 0 0 1 0 3h-2a1.5 1.5 0 0 0 0 3h3.5"/>'),0), true)
+   +grp('meal','食事', btn('meal','meal','食事',svg('<path d="M4 3v7a3 3 0 0 0 6 0V3M7 3v18M17 3c-2 0-3 3-3 6v3h3v9"/>'), kcal?`${kcal}kcal`:(meals.length?`${meals.length}食`:0)), true)
    +grp('life','生活', btn('life','morning','朝ルーティン',svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>'), e.morning?'✓':0)+btn('life','bed','就寝',svg('<path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M6 10V7a1 1 0 0 1 1-1h4v4"/>'), e.bed?e.bed:0)+btn('life','weight','体重',svg('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 10a4 4 0 0 1 8 0M12 10l2-3"/>'), e.weight?e.weight:0))
-   +`<p class="mute" style="margin:0">押した瞬間に保存。間違えたら下に出る「取り消す」で戻せます</p>`, `${acts.length+paysN+meals.length}件 今日`);
+   +`<p class="mute" style="margin:0">運動・英語はタップ→どこで何をしたかをメモ→記録。負荷は仮の点をつけ、夜にAIが見直します</p>`, `${acts.length+paysN+meals.length}件 今日`);
 
   // ---- 漏れ ----
   SEC.miss=''; if(ms.length){
@@ -459,7 +465,7 @@ function renderHome(){
 
   // ---- 今日のタイムライン ----
   const tlHtml = tl.length ? tl.map(it=>`<div class="it ${it.cls}"><span class="tm">${it.t}</span><span class="pt"><i></i></span><span class="bd">${it.html}</span></div>`).join('') : '';
-  const _unused=`<div class="it now"><span class="tm">${NOW}</span><span class="pt"><i></i></span><span class="bd gap">いま。${S.events?'ショートカットの到着・支払い・手入力がここに並びます':'イベント読み込み中…'}</span></div>`;
+  const _unused=`<div class="it now"><span class="tm">${NOW}</span><span class="pt"><i></i></span><span class="bd gap">いま。${S.events?'記録したものが時系列で並びます':'イベント読み込み中…'}</span></div>`;
   const noTime = monthTx().filter(t=>t.d===TODAY);
   SEC.tl = card('今日のタイムライン', `<div class="tl">${tlHtml}</div>${noTime.length?`<p class="mute" style="margin:0">明細（時刻なし）：${noTime.map(t=>`${esc(t.m.slice(0,12))} ${t.a.toLocaleString()}円`).join('・')}</p>`:''}`, `${tl.length-1}件`);
 
@@ -500,13 +506,26 @@ async function record(k, handleId){
   const sport=c.sports.find(s=>s[0]===k);
   const addHandled = ()=>{ if(handleId) e.handled=(e.handled||[]).concat([Number(handleId)]); };
   if(sport){
-    const [key,name]=sport; acts.push({t, k:key, label:name, sport:true}); e.actions=acts; addHandled();
-    const w=S.week||{}; const sp2=Object.assign({}, w.sport||{}); sp2[key]=(sp2[key]||0)+1; const log2=JSON.parse(JSON.stringify(w.sportLog||{})); log2[TODAY]=(log2[TODAY]||[]).concat([key]);
-    const prevW=S.week, prevE=S.entries[TODAY];
-    S.week=Object.assign({}, w, {sport:sp2, sportLog:log2}); S.entries[TODAY]=e; rerender(); pop(k);
-    const rem=Math.max(0, sport[2]-sp2[key]);
-    toastUndo(rem===0?`${name} 今週${sport[2]}回 達成！`:`${name} ＋1。今週あと${rem}回`, async()=>{ S.week=prevW; S.entries[TODAY]=prevE||{}; rerender(); await put('weeks/'+WEEK0, S.week||{}); await put('entries/'+TODAY, S.entries[TODAY]); });
-    await put('weeks/'+WEEK0, S.week); await put('entries/'+TODAY, e); return;
+    const [key,name,goal]=sport; const w=S.week||{}; const cur=(w.sport||{})[key]||0;
+    const LV=[['ゆるめ',0.7,'遊び・流し'],['ふつう',1,'いつも通り'],['きつめ',1.5,'追い込んだ'],['チャレンジ',2,'格上・初挑戦・大会']];
+    openSheet(`${name} を記録`, `<label>どこで・何を（後でAIが負荷を判定します）</label><input type="text" id="sh-place" placeholder="${key==='pickle'?'例 PICKLR 新橋・上級者枠で2時間':(key==='run'?'例 六本木→赤坂 5km':(key==='golf'?'例 ライザップ 六本木・ドライバー':'例 場所・内容'))}"><label>時間</label><div class="chips" id="sh-dur">${[30,60,90,120,150,180].map(d=>`<button class="chip ${d===60?'on':''}" data-pick="${d}">${d>=60?`${Math.floor(d/60)}h${d%60?'30':''}`:`${d}分`}</button>`).join('')}</div><label>強度</label><div class="chips" id="sh-lv">${LV.map((l,i)=>`<button class="chip ${i===1?'on':''}" data-pick="${i}" title="${l[2]}">${l[0]}</button>`).join('')}</div><textarea id="sh-note" placeholder="メモ（相手のレベル、できたこと、次の課題など）" style="min-height:56px"></textarea>`, async()=>{
+      const place=$('sh-place').value.trim(); const dur=Number(document.querySelector('#sh-dur .on')?.dataset.pick||60); const li=Number(document.querySelector('#sh-lv .on')?.dataset.pick||1); const note=$('sh-note').value.trim();
+      const pts=Math.round(dur/30*LV[li][1]*10)/10;
+      acts.push({t, k:key, label:name, sport:true, place, dur, level:LV[li][0], note, pts}); e.actions=acts; addHandled();
+      const sp2=Object.assign({}, w.sport||{}); sp2[key]=cur+1; const log2=JSON.parse(JSON.stringify(w.sportLog||{})); log2[TODAY]=(log2[TODAY]||[]).concat([key]);
+      const prevW=S.week, prevE=S.entries[TODAY];
+      S.week=Object.assign({}, w, {sport:sp2, sportLog:log2}); S.entries[TODAY]=e; rerender(); pop(k);
+      const rem=Math.max(0, goal-sp2[key]);
+      toastUndo(`${name} ${dur}分・${LV[li][0]}（仮 ${pts}pt）。${rem===0?`今週${goal}回 達成！`:`今週あと${rem}回`}`, async()=>{ S.week=prevW; S.entries[TODAY]=prevE||{}; rerender(); await put('weeks/'+WEEK0, S.week||{}); await put('entries/'+TODAY, S.entries[TODAY]); });
+      await put('weeks/'+WEEK0, S.week); await put('entries/'+TODAY, e); return true; });
+    bindPicks('#sh-dur'); bindPicks('#sh-lv'); return;
+  }
+  if(k==='study'){
+    openSheet('英語を記録', `<label>時間</label><div class="chips" id="sh-dur">${[15,30,45,60,90].map(d=>`<button class="chip ${d===30?'on':''}" data-pick="${d}">${d}分</button>`).join('')}</div><label>何を</label><div class="chips" id="sh-what">${['Morning Line','シャドーイング','単語','TOEFL問題','英会話','仕事の英語','その他'].map((x,i)=>`<button class="chip ${i===0?'on':''}" data-pick="${x}">${x}</button>`).join('')}</div><textarea id="sh-note" placeholder="メモ（記事のテーマ、つまずいた表現、どこで など）" style="min-height:56px"></textarea>`, async()=>{
+      const n=Number(document.querySelector('#sh-dur .on')?.dataset.pick||30); const what=document.querySelector('#sh-what .on')?.dataset.pick||''; const note=$('sh-note').value.trim();
+      const prev=S.entries[TODAY]; e.study_min=(e.study_min||0)+n; acts.push({t, k:'study', label:`英語 ${n}分`, what, note}); e.actions=acts; if(what) e.study_note=[e.study_note, what].filter(Boolean).join('・'); const left=Math.max(0,c.englishMin-e.study_min); S.entries[TODAY]=e; rerender(); pop(k);
+      toastUndo(left?`英語 +${n}分（${what}）。今日あと${left}分`:`英語 今日${e.study_min}分 達成！`, async()=>{ S.entries[TODAY]=prev||{}; rerender(); await put('entries/'+TODAY, S.entries[TODAY]); }); await put('entries/'+TODAY, e); return true; });
+    bindPicks('#sh-dur'); bindPicks('#sh-what'); return;
   }
   const prev=S.entries[TODAY];
   if(k==='study30'||k==='study60'){ const n=k==='study30'?30:60; e.study_min=(e.study_min||0)+n; acts.push({t, k:'study', label:`英語 ${n}分`}); e.actions=acts; const left=Math.max(0,c.englishMin-e.study_min); S.entries[TODAY]=e; rerender(); pop(k); toastUndo(left?`英語 +${n}分。今日あと${left}分`:`英語 今日${e.study_min}分 達成！`, async()=>{ S.entries[TODAY]=prev||{}; rerender(); await put('entries/'+TODAY, S.entries[TODAY]); }); await put('entries/'+TODAY, e); return; }
@@ -692,8 +711,9 @@ function showPin(msg){
   const go=async()=>{ PIN=$('in-pin').value.trim(); try{ localStorage.setItem('ll_pin',PIN); }catch(e){} v.classList.remove('on'); S.ready=false; S.dbOk=null; route(); await load(); };
   $('go-pin').addEventListener('click',go); $('in-pin').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
 }
-let PENDING=0, RELOAD_AFTER=false;
-async function put(path, data){
+let PENDING=0, RELOAD_AFTER=false; const PUTQ={};
+function put(path, data){ const snap=JSON.parse(JSON.stringify(data)); const run=()=>doPut(path, snap); PUTQ[path]=(PUTQ[path]||Promise.resolve()).then(run, run); return PUTQ[path]; }
+async function doPut(path, data){
   PENDING++;
   try{ await api('/api/doc',{method:'POST',body:JSON.stringify({path,data})}); }
   catch(e){ if(e.pin){ showPin('暗証番号が違うか、期限切れです'); } else { toast('保存に失敗しました'); console.error(e); } }
