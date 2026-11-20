@@ -169,6 +169,8 @@ nav a.on{color:var(--acc);font-weight:700}
 .rec button .n{top:2px;right:3px;font-size:9px;padding:0 4px}
 .recg .rec.one button{flex:0 0 calc(25% - 5px)}
 @media (min-width:900px){.rec button{padding:10px 4px;font-size:11px}}
+.upd{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:10px 14px 10px 16px;font-size:13px;display:flex;gap:10px;align-items:center;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.upd button{font:inherit;font-weight:700;color:#FCD34D;background:transparent;border:0;cursor:pointer}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
 @keyframes ringfill{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:var(--off)}}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
@@ -206,6 +208,7 @@ nav a.on{color:var(--acc);font-weight:700}
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
+const BUILD='20261120-1559';
 // ---------- helpers ----------
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -739,7 +742,8 @@ async function load(){
     S.dbOk=false; S.ready=true; S.err=String(e.message||e); rerender();
   }
 }
-function boot(){ renderNav('home'); route(); window.addEventListener('hashchange', route); load(); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && S.dbOk) load(); }); }
+async function checkUpdate(){ try{ const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return; const v=(await r.json()).build; if(v && v!==BUILD && !$('upd')){ const d=document.createElement('div'); d.className='upd'; d.id='upd'; d.innerHTML=`<span>新しい版があります</span><button id="upd-go">更新する</button>`; document.body.appendChild(d); $('upd-go').addEventListener('click',()=>{ location.href=location.pathname+'?v='+v+location.hash; }); } }catch(_){} }
+function boot(){ checkUpdate(); setInterval(checkUpdate, 10*60*1000); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkUpdate(); }); renderNav('home'); route(); window.addEventListener('hashchange', route); load(); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && S.dbOk) load(); }); }
 boot();
 </script>
 </body>
